@@ -12,7 +12,9 @@ export type InvitedEvent = {
   id: number;
   name: string;
   date: string | null;
+  time: string | null;
   venue: string | null;
+  mapUrl: string | null;
   details: string | null;
   attendingCount: number | null;
 };
@@ -38,4 +40,11 @@ export function formatEventDate(date: string | null): string | null {
     year: "numeric",
     timeZone: "UTC",
   }).format(new Date(`${date}T00:00:00Z`));
+}
+
+export function formatEventTime(time: string | null): string | null {
+  if (!time || !/^([01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?$/.test(time)) return null;
+  const [hour, minute] = time.split(":");
+  const hours = Number(hour);
+  return `${hours % 12 || 12}:${minute} ${hours < 12 ? "AM" : "PM"}`;
 }

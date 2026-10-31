@@ -17,6 +17,12 @@ create table if not exists public.events (
   details text check (details is null or char_length(details) <= 1000)
 );
 
+-- Also upgrades existing installations without changing event details or RSVPs.
+alter table public.events
+  add column if not exists event_time time without time zone,
+  add column if not exists map_url text
+    check (map_url is null or (char_length(map_url) <= 2000 and map_url ~ '^https://[^[:space:]]+$'));
+
 insert into public.events (id, name) values (1, 'Day 1'), (2, 'Day 2'), (3, 'Day 3')
 on conflict (id) do nothing;
 
@@ -129,7 +135,9 @@ begin
                    'id', e.id,
                    'name', e.name,
                    'date', e.event_date,
+                   'time', e.event_time,
                    'venue', e.venue,
+                   'mapUrl', e.map_url,
                    'details', e.details,
                    'attendingCount', ie.attending_count
                  )

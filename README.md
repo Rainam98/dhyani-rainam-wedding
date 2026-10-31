@@ -42,6 +42,38 @@ update public.events set name = 'Reception', event_date = '2027-02-12', venue = 
 
 Events are shown in date order. Keep the `id` values 1, 2, 3.
 
+### Configurable location, date, time and map
+
+For an existing database, re-run the entire `DATABASE.sql` once, then deploy
+the updated code. This adds optional `event_time` and `map_url` columns and
+updates the guest lookup function without deleting invitations or responses.
+
+Set the initial location for all three events in the SQL Editor:
+
+```sql
+update public.events set venue = 'Baltimore' where id in (1, 2, 3);
+```
+
+After that, edit **Table Editor > events** whenever details change:
+
+| Column | Value |
+| --- | --- |
+| `name` | Event name |
+| `event_date` | Actual date in `YYYY-MM-DD` format |
+| `event_time` | Start time in 24-hour format, e.g. `18:30` for 6:30 PM |
+| `venue` | `Baltimore` now; venue name/address when confirmed |
+| `map_url` | Optional full `https://` map link, including Google Maps share links |
+| `details` | Optional additional instructions |
+
+Dates and times are displayed as entered, in the venue's local time (Eastern
+Time for Baltimore), not converted to the guest's timezone. Leave unknown
+dates, times or map links `NULL`; those details will not be displayed.
+
+These event details are shared across all personalized links. Only which
+events a family is invited to, their seat limit and their RSVP are personalized.
+Database edits require **no further deployment** and appear when guests open
+or refresh their link. An already-open page does not update automatically.
+
 ## 3. Add families
 
 In the SQL Editor, one line per family:
@@ -61,6 +93,26 @@ select public.add_invitation('Neha Mehta',        1, array[3]::smallint[]);
 To change a family later, use **Table Editor**: `invitations` (name, seats)
 and `invitation_events` (add or delete a row to invite or uninvite them from a
 day). Deleting an invitation removes its responses too.
+
+### Prepare a guest list for bulk setup
+
+Open [`guest-template.csv`](guest-template.csv) in Excel, Numbers or Google
+Sheets. Replace the example rows with one row per family or invitation:
+
+- `family_name`: the display name guests should see (1 to 200 characters).
+- `max_guests`: the reserved seat limit (a whole number from 1 to 50), shared
+  across all events that family is invited to.
+- `event_1`, `event_2`, `event_3`: `yes` or `no` for the corresponding event IDs
+  in **Table Editor > events**. At least one must be `yes`.
+
+Export the completed sheet as CSV. To prepare a bulk SQL script, supply that
+CSV, your deployed site's base URL, and the exact invitation code of each test
+family to remove (from **Table Editor > invitations**). Codes identify the
+test rows without risking deletion of a real family with the same name.
+Treat these codes as private links; do not post them publicly.
+No guest phone numbers, email addresses, database keys or passwords are needed.
+The script should delete only the specified test invitations, create the new
+invitations using `public.add_invitation`, and return their RSVP links.
 
 ## 4. Get the links to send
 

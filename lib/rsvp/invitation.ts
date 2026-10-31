@@ -1,6 +1,6 @@
 import "server-only";
 import { getSupabase } from "../supabase/server";
-import { LIMITS, normalizeCode, type Invitation, type InvitedEvent } from "./types";
+import { LIMITS, formatEventTime, normalizeCode, type Invitation, type InvitedEvent } from "./types";
 
 export type LoadResult =
   | { status: "found"; invitation: Invitation }
@@ -18,14 +18,22 @@ function isOptionalString(value: unknown): value is string | null {
 function parseEvent(value: unknown): InvitedEvent | null {
   if (!isRecord(value)) return null;
   const { id, name, date, venue, details, attendingCount } = value;
+  // Older database functions omit these fields until DATABASE.sql is re-run.
+  const time = value.time === undefined ? null : value.time;
+  const mapUrl = value.mapUrl === undefined ? null : value.mapUrl;
   if (!Number.isInteger(id) || typeof name !== "string") return null;
   if (!isOptionalString(date) || !isOptionalString(venue) || !isOptionalString(details)) return null;
+  if (!isOptionalString(time) || (time !== null && !formatEventTime(time))) return null;
+  if (!isOptionalString(mapUrl)) return null;
+  if (mapUrl !== null && (!URL.canParse(mapUrl) || new URL(mapUrl).protocol !== "https:")) return null;
   if (attendingCount !== null && !Number.isInteger(attendingCount)) return null;
   return {
     id: id as number,
     name,
     date,
+    time,
     venue,
+    mapUrl,
     details,
     attendingCount: attendingCount as number | null,
   };

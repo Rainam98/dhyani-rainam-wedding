@@ -2,7 +2,7 @@
 
 import { useId, useRef, useState, useTransition, type FormEvent } from "react";
 import { submitRsvp } from "./actions";
-import { LIMITS, formatEventDate, type Invitation } from "../../../lib/rsvp/types";
+import { LIMITS, formatEventDate, formatEventTime, type Invitation } from "../../../lib/rsvp/types";
 
 type Props = { code: string; invitation: Invitation };
 
@@ -102,29 +102,51 @@ export default function RsvpForm({ code, invitation }: Props) {
       <form onSubmit={handleSubmit} className="stack" noValidate>
         {invitation.events.map((item) => {
           const date = formatEventDate(item.date);
+          const time = formatEventTime(item.time);
           const selectId = `${baseId}-event-${item.id}`;
           return (
             <div key={item.id} className="event">
               <h3>{item.name}</h3>
-              {date ? <p className="event-meta">{date}</p> : null}
-              {item.venue ? <p className="event-meta">{item.venue}</p> : null}
+              {date || time || item.venue || item.mapUrl ? (
+                <div className="event-info">
+                  {date ? <span>{date}</span> : null}
+                  {time ? <span className="event-time" title="Venue local time">{time}</span> : null}
+                  {item.mapUrl ? (
+                    <a
+                      className="event-map"
+                      href={item.mapUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label={`${item.venue || "View map"} — map for ${item.name} (opens in a new tab)`}
+                    >
+                      <svg width="14" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
+                        <path d="M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 1 1 16 0Z" />
+                        <circle cx="12" cy="10" r="3" />
+                      </svg>
+                      {item.venue || "View map"}
+                    </a>
+                  ) : item.venue ? <span>{item.venue}</span> : null}
+                </div>
+              ) : null}
               {item.details ? <p className="note">{item.details}</p> : null}
-              <label htmlFor={selectId}>How many guests will attend?</label>
-              <select
-                id={selectId}
-                value={counts[item.id]}
-                onChange={(e) => setCounts((current) => ({ ...current, [item.id]: e.target.value }))}
-              >
-                <option value="" disabled>
-                  Please choose
-                </option>
-                <option value="0">Not attending</option>
-                {Array.from({ length: invitation.maxGuests }, (_, i) => i + 1).map((n) => (
-                  <option key={n} value={String(n)}>
-                    {guestLabel(n)}
+              <div className="event-rsvp">
+                <label htmlFor={selectId}>How many guests will attend?</label>
+                <select
+                  id={selectId}
+                  value={counts[item.id]}
+                  onChange={(e) => setCounts((current) => ({ ...current, [item.id]: e.target.value }))}
+                >
+                  <option value="" disabled>
+                    Please choose
                   </option>
-                ))}
-              </select>
+                  <option value="0">Not attending</option>
+                  {Array.from({ length: invitation.maxGuests }, (_, i) => i + 1).map((n) => (
+                    <option key={n} value={String(n)}>
+                      {guestLabel(n)}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
           );
         })}
